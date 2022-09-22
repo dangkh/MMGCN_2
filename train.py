@@ -184,7 +184,7 @@ def train_or_eval_graph_model(model, loss_function, dataloader, epoch, cuda, mod
             for ii in range(numMissing):
                 print(ii)
                 d[l[ii], :lenMissing] = 0
-            dmList.append(d.cuda())
+            dmList.append(d)
         textf, visuf, acouf = dmList
         if args.multi_modal:
             if args.mm_fusion_mthd=='concat':
