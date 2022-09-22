@@ -151,7 +151,7 @@ def train_or_eval_model(model, loss_function, dataloader, epoch, optimizer=None,
     return avg_loss, avg_accuracy, labels, preds, masks, avg_fscore, [alphas, alphas_f, alphas_b, vids]
 
 
-def train_or_eval_graph_model(model, loss_function, dataloader, epoch, cuda, modals, optimizer=None, train=False, dataset='IEMOCAP'):
+def train_or_eval_graph_model(model, loss_function, dataloader, epoch, cuda, modals, optimizer=None, train=False, dataset='IEMOCAP', rate_missing = 0):
     losses, preds, labels = [], [], []
     scores, vids = [], []
 
@@ -172,6 +172,20 @@ def train_or_eval_graph_model(model, loss_function, dataloader, epoch, cuda, mod
             optimizer.zero_grad()
         
         textf, visuf, acouf, qmask, umask, label = [d.cuda() for d in data[:-1]] if cuda else data[:-1]
+        num_utterance = textf.shape[0]
+        dList = [textf.clone(), visuf.clone(), acouf.clone()]
+        dmList =[]
+        for d in dList:
+            l = np.arange(0, num_utterance, 1)
+            np.random.shuffle(l)
+            numMissing = num_utterance * rate_missing // 100 
+            lenMissing = d.shape[-1] // 4
+            # number of missing feature = 25%
+            for ii in range(numMissing):
+                print(ii)
+                d[l[ii], :lenMissing] = 0
+            dmList.append(d.cuda())
+        textf, visuf, acouf = dmList
         if args.multi_modal:
             if args.mm_fusion_mthd=='concat':
                 if modals == 'avl':
@@ -302,6 +316,8 @@ if __name__ == '__main__':
     parser.add_argument('--use_speaker', action='store_true', default=False, help='whether to use speaker embedding')
 
     parser.add_argument('--use_modal', action='store_true', default=False, help='whether to use modal embedding')
+
+    parser.add_argument('--rate_missing', type=int, default=10, help='rate of missing in a modality')
 
     args = parser.parse_args()
     today = datetime.datetime.now()
@@ -462,16 +478,16 @@ if __name__ == '__main__':
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.l2)
 
-    if args.Dataset == 'MELD':
-        train_loader, valid_loader, test_loader = get_MELD_loaders(valid=0.0,
-                                                                    batch_size=batch_size,
-                                                                    num_workers=0)
-    elif args.Dataset == 'IEMOCAP':
-        train_loader, valid_loader, test_loader = get_IEMOCAP_loaders(valid=0.0,
+    # if args.Dataset == 'MELD':
+    #     train_loader, valid_loader, test_loader = get_MELD_loaders(valid=0.0,
+    #                                                                 batch_size=batch_size,
+    #                                                                 num_workers=0)
+    # elif args.Dataset == 'IEMOCAP':
+    train_loader, valid_loader, test_loader = get_IEMOCAP_loaders(valid=0.0,
                                                                       batch_size=batch_size,
                                                                       num_workers=0)
-    else:
-        print("There is no such dataset")
+    # else:
+    #     print("There is no such dataset")
 
     best_fscore, best_loss, best_label, best_pred, best_mask = None, None, None, None, None
     all_fscore, all_acc, all_loss = [], [], []
@@ -486,9 +502,9 @@ if __name__ == '__main__':
         start_time = time.time()
 
         if args.graph_model:
-            train_loss, train_acc, _, _, train_fscore, _, _, _, _, _ = train_or_eval_graph_model(model, loss_function, train_loader, e, cuda, args.modals, optimizer, True, dataset=args.Dataset)
-            valid_loss, valid_acc, _, _, valid_fscore, _, _, _, _, _ = train_or_eval_graph_model(model, loss_function, valid_loader, e, cuda, args.modals, dataset=args.Dataset)
-            test_loss, test_acc, test_label, test_pred, test_fscore, _, _, _, _, _ = train_or_eval_graph_model(model, loss_function, test_loader, e, cuda, args.modals, dataset=args.Dataset)
+            train_loss, train_acc, _, _, train_fscore, _, _, _, _, _ = train_or_eval_graph_model(model, loss_function, train_loader, e, cuda, args.modals, optimizer, True, dataset=args.Dataset, rate_missing = args.rate_missing)
+            valid_loss, valid_acc, _, _, valid_fscore, _, _, _, _, _ = train_or_eval_graph_model(model, loss_function, valid_loader, e, cuda, args.modals, dataset=args.Dataset, rate_missing = args.rate_missing)
+            test_loss, test_acc, test_label, test_pred, test_fscore, _, _, _, _, _ = train_or_eval_graph_model(model, loss_function, test_loader, e, cuda, args.modals, dataset=args.Dataset, rate_missing = args.rate_missing)
             all_fscore.append(test_fscore)
 
 
