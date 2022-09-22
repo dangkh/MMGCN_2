@@ -478,16 +478,16 @@ if __name__ == '__main__':
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.l2)
 
-    # if args.Dataset == 'MELD':
-    #     train_loader, valid_loader, test_loader = get_MELD_loaders(valid=0.0,
-    #                                                                 batch_size=batch_size,
-    #                                                                 num_workers=0)
-    # elif args.Dataset == 'IEMOCAP':
-    train_loader, valid_loader, test_loader = get_IEMOCAP_loaders(valid=0.0,
+    if args.Dataset == 'MELD':
+        train_loader, valid_loader, test_loader = get_MELD_loaders(valid=0.0,
+                                                                    batch_size=batch_size,
+                                                                    num_workers=0)
+    elif args.Dataset == 'IEMOCAP':
+        train_loader, valid_loader, test_loader = get_IEMOCAP_loaders(valid=0.0,
                                                                       batch_size=batch_size,
                                                                       num_workers=0)
-    # else:
-    #     print("There is no such dataset")
+    else:
+        print("There is no such dataset")
 
     best_fscore, best_loss, best_label, best_pred, best_mask = None, None, None, None, None
     all_fscore, all_acc, all_loss = [], [], []
