@@ -182,10 +182,11 @@ def train_or_eval_graph_model(model, loss_function, dataloader, epoch, cuda, mod
             lenMissing = d.shape[-1] // 4
             # number of missing feature = 25%
             for ii in range(numMissing):
-                print(ii)
                 d[l[ii], :lenMissing] = 0
             dmList.append(d)
         textf, visuf, acouf = dmList
+        print([x.shape for x in dList])
+        print([x.shape for x in dmList])
         if args.multi_modal:
             if args.mm_fusion_mthd=='concat':
                 if modals == 'avl':
